@@ -1,11 +1,8 @@
 #!/usr/bin/env python
-
-import cli
 import boto3
-import os
 import sys
 import threading
-import argparse
+import cli
 
 
 class cag():
@@ -47,29 +44,28 @@ class cag():
         print "\nDownload Complete"
         return True
 
-    def upload_file(self, bucket, file_plus_path):
-        filename = os.path.basename(file_plus_path)
+    def upload_file(self, bucket, filename, directory="/bootflash/"):
 
         try:
-            self.s3_client.upload_file(file_plus_path, bucket, filename)
+            self.s3_client.upload_file(directory + filename, bucket, filename)
         except Exception as e:
             print "Uploading file Failed.  Error: %s" % (e)
             return False
         print "Upload Complete to S3 bucket %s" % (bucket)
         return True
 
-    def save_cmd_output(cmdlist, filename, print_output=False):
-        text_file = open(filename, "w")
+    def save_cmd_output(self, cmdlist, filename, bucket=None, directory="/bootflash/", print_output=False):
 
-        for command in cmdlist:
-            cmd_output = cli.execute(command)
-            col_space = (80 - (len(command))) / 2
-            if print_output is True:
-                print "\n%s %s %s" % ('=' * col_space, command, '=' * col_space)
-                print "%s \n%s" % (cmd_output, '=' * 80)
+        with open(directory + filename, 'w') as f:
+            for command in cmdlist:
+                cmd_output = cli.execute(command)
+                col_space = (80 - (len(command))) / 2
+                if print_output is True:
+                    print "\n%s %s %s" % ('=' * col_space, command, '=' * col_space)
+                    print "%s \n%s" % (cmd_output, '=' * 80)
 
-            text_file.write("\n%s %s %s\n" %
-                            ('=' * col_space, command, '=' * col_space))
-            text_file.write("%s \n%s\n" % (cmd_output, '=' * 80))
-
-        text_file.close()
+                f.write("\n%s %s %s\n" %
+                        ('=' * col_space, command, '=' * col_space))
+                f.write("%s \n%s\n" % (cmd_output, '=' * 80))
+        if bucket is not None:
+            self.upload_file(bucket, filename)
