@@ -10,7 +10,7 @@ To install csr_aws_guestshell:
 
 ```
 $ sudo pip install csr_aws_guestshell
-
+```
 
 Scripts will be copied to the guestshell PATH where they can then be run.  
 
@@ -27,11 +27,13 @@ These scripts make use of the cli.py script pre-installed to guestshell.  there 
 import cli
 
 cli.execute("show run")
+```
+
 
 ```
 import cli
 cli.executep("show run")
-
+```
 
 ```
 import cli
@@ -43,10 +45,13 @@ configuration = '''event manager applet %s
                         action 1.0 cli command %s
                         event timer cron cron-entry %s''' % (file,gs_cmd,cron_entry)
 result= cli.configure(configuration)
+```
+
 
 ```
 import cli
 cli.configurep("copy running-config startup-config")
+```
 
 These scripts contain the following functions to assist in script development:
 
