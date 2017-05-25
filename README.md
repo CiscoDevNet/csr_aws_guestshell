@@ -76,7 +76,6 @@ These scripts make use of the cli.py script pre-installed to guestshell.  there 
 
 ```
 import cli
-
 show_run_output = cli.execute("show run")
 ```
 
