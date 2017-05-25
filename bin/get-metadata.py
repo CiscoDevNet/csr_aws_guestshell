@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-
-import cli
 import json
 from boto.utils import get_instance_metadata
 
