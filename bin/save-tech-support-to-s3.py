@@ -11,7 +11,3 @@ bucket = args.bucket
 filename = args.filename
 
 cag().save_cmd_output(["show tech-support"], filename, bucket)
-# with open('/bootflash/' + filename, 'w') as f:
-#     f.write(cli.execute("show tech-support"))
-
-# cag().upload_file(bucket, filename)

@@ -8,20 +8,20 @@ This repository contains a library (csr_aws_guestshell) that has helper function
 
 To enable guestshell on CSR on AWS:
 ```
-$ guestshell enable VirtualPortGroup 0 guest-ip 192.168.35.2 name-server 8.8.8.8
+ios-prompt#  guestshell enable VirtualPortGroup 0 guest-ip 192.168.35.2 name-server 8.8.8.8
 Please wait for completion
-$ guestshell
+ios-prompt# guestshell
 
 ```
 
 To install csr_aws_guestshell:
 
 ```
-$ sudo pip install csr_aws_guestshell
+[guestshell@guestshell ~]$ sudo pip install csr_aws_guestshell
 ```
 Alternatively, you can install to your user directory:
 ```
-$ pip install --user csr_aws_guestshell
+[guestshell@guestshell ~]$ pip install --user csr_aws_guestshell
 ```
 
 ## Running scripts 
@@ -38,15 +38,36 @@ List of scripts to be installed:
 ## Example output from running via IOS shell:
 
 ```
+ip-172-31-52-111#guestshell run get-metadata.py
+{
+    "ami-id": "ami-1234abcd", 
+    "ami-launch-index": "0", 
+    "ami-manifest-path": "(unknown)", 
+    "block-device-mapping": {
+        "ami": "/dev/xvda", 
+        "root": "/dev/xvda"
+    }, 
+    "hostname": "ip-XXX-XX-XX-XXX.ec2.internal", 
 
+     ... <snip> ...
 
 ```
 
 ## Example output from running via guestshell prompt:
 
 ```
+[guestshell@guestshell ~]$ get-metadata.py
+{
+    "ami-id": "ami-1234abcd", 
+    "ami-launch-index": "0", 
+    "ami-manifest-path": "(unknown)", 
+    "block-device-mapping": {
+        "ami": "/dev/xvda", 
+        "root": "/dev/xvda"
+    }, 
+    "hostname": "ip-XXX-XX-XX-XXX.ec2.internal", 
 
-
+     ... <snip> ...
 ```
 
 ## Examples using cli module
@@ -56,10 +77,10 @@ These scripts make use of the cli.py script pre-installed to guestshell.  there 
 ```
 import cli
 
-cli.execute("show run")
+show_run_output = cli.execute("show run")
 ```
 
-
+Alternatively, you can print the result to stdout:
 ```
 import cli
 cli.executep("show run")
@@ -87,9 +108,9 @@ cli.configurep("copy running-config startup-config")
 
 These scripts contain the following functions to assist in script development:
 
-* [```download_file```] -- called with bucket name, filename and optional directory for the destination on the CSR1000V
-* [```upload_file```] -- called with bucket name, filename and optional directory for the location on the CSR1000V
-* [```save_cmd_output```] -- called with command list via python list, filename to save to, optional bucket if uploading file, and flag to print to stdout
+* ```download_file``` -- called with bucket name, filename and optional directory for the destination on the CSR1000V
+* ```upload_file``` -- called with bucket name, filename and optional directory for the location on the CSR1000V
+* ```save_cmd_output``` -- called with command list via python list, filename to save to, optional bucket if uploading file, and flag to print to stdout
 
 ## Examples using csr_aws_guestshell
 
@@ -97,4 +118,16 @@ These scripts contain the following functions to assist in script development:
 from csr_aws_guestshell import cag
 
 cag().upload_file(my_bucket, my_filename)
+
+cmdlist = \
+    [
+        "show interfaces",
+        "show version",
+        "show ip route",
+        "show platform hardware qfp active statistics drop",
+        "show platform hardware qfp active datapath utilization",
+        "show interfaces gigabitEthernet 1 | incl drops|pack|err",
+        "show platform hardware throughput level",
+    ]
+cag().save_cmd_output(cmdlist, my_filename, my_bucket)
 ```
