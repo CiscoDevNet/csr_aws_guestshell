@@ -131,8 +131,12 @@ def print_route_info(vpc):
                     gateway = route['NetworkInterfaceId']
                     if eni == gateway:
                         gateway = "*" + gateway
+            if 'DestinationCidrBlock' in route:
+                destinationblock = route['DestinationCidrBlock']
+            else:
+                destinationblock = "NoCidr"
             print "%-20s %-20s %-20s %-20s %-20s %-20s %-20s" % \
-                (r['RouteTableId'], route['DestinationCidrBlock'],
+                (r['RouteTableId'], destinationblock,
                  gateway, route['State'], rtb_assoc_id, subnet, propagated)
 
 

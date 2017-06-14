@@ -3,12 +3,18 @@ import boto3
 import sys
 import threading
 import cli
+from boto.utils import get_instance_metadata
 
 
 class cag():
     def __init__(self):
         self.s3_resource = boto3.resource('s3')
         self.s3_client = boto3.client('s3')
+        self.cloudwatch = boto3.client('cloudwatch')
+        self.metadata = self.get_metadata()
+        self.instance_id = "Not Found"
+        if self.metadata:
+            self.instance_id = self.metadata['instance-id']
 
     class ProgressPercentage(object):
         def __init__(self, filename, cag):
@@ -69,3 +75,28 @@ class cag():
                 f.write("%s \n%s\n" % (cmd_output, '=' * 80))
         if bucket is not None:
             self.upload_file(bucket, filename)
+
+    def send_metric(self, name, value, category):
+        value = int(value)
+        print "category: %s: name: %s, value %d" % (category, name, value)
+        response = self.cloudwatch.put_metric_data(
+            Namespace="csr1000v",
+            MetricData=[{'MetricName': name,
+                         'Value': value,
+                         'Unit': 'Count',
+                         'Dimensions': [
+                             {
+                                 "Name": "PerInstanceStatistics",
+                                 "Value": category,
+                                 "Name": "Instance-id",
+                                 "Value": self.instance_id
+                             }
+                         ],
+                         }
+                        ],
+        )
+        if response['ResponseMetadata']['HTTPStatusCode'] != 200:
+            print "Error sending %s" % name
+
+    def get_metadata(self):
+        return get_instance_metadata(timeout=2, num_retries=1)
