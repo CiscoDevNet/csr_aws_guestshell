@@ -4,6 +4,7 @@ import sys
 import threading
 import cli
 from boto.utils import get_instance_metadata
+import syslog
 
 
 class cag():
@@ -78,7 +79,8 @@ class cag():
 
     def send_metric(self, name, value, category):
         value = int(value)
-        print "category: %s: name: %s, value %d" % (category, name, value)
+        message = "category: %s: name: %s, value %d" % (category, name, value)
+        syslog.syslog(message)
         response = self.cloudwatch.put_metric_data(
             Namespace="csr1000v",
             MetricData=[{'MetricName': name,

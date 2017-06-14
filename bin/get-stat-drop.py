@@ -28,7 +28,7 @@ def execute_command(command):
 def get_stat_drop():
     cmd_output = execute_command(
         "show platform hardware qfp active statistics drop clear")
-    print cmd_output
+
     if "all zero" in cmd_output:
         csr.send_metric("TailDrop", int(0), "Statistics drops")
         return
