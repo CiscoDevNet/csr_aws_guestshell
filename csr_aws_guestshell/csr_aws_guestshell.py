@@ -9,10 +9,11 @@ import syslog
 
 class cag():
     def __init__(self):
-        self.s3_resource = boto3.resource('s3')
-        self.s3_client = boto3.client('s3')
-        self.cloudwatch = boto3.client('cloudwatch')
         self.metadata = self.get_metadata()
+        self.region = self.metadata['placement']['availability-zone'][:-1]
+        self.s3_resource = boto3.resource('s3', region_name=self.region)
+        self.s3_client = boto3.client('s3', region_name=self.region)
+        self.cloudwatch = boto3.client('cloudwatch', region_name=self.region)
         self.instance_id = "Not Found"
         if self.metadata:
             self.instance_id = self.metadata['instance-id']

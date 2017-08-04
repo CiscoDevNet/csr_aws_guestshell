@@ -1,6 +1,6 @@
 from distutils.core import setup
 project_name = 'csr_aws_guestshell'
-project_ver = '0.0.5.dev'
+project_ver = '0.0.6.dev'
 setup(
     name=project_name,
     packages=[project_name],  # this must be the same as the name above
@@ -11,7 +11,7 @@ setup(
     scripts=["bin/get-metadata.py", "bin/get-route-table.py",
              "bin/save-config-to-s3.py", "bin/save-tech-support-to-s3.py",
              "bin/load-bin-from-s3.py", "bin/capture-interface.py",
-             "bin/get-stat-drop.py"],
+             "bin/get-stat-drop.py", "bin/measure-packet-trace.py"],
     # use the URL to the github repo
     url='https://github.com/CiscoDevNet/' + project_name,
     download_url='https://github.com/CiscoDevNet/' + project_name + '/archive/' + \
