@@ -1,0 +1,392 @@
+#!/usr/bin/env python
+import argparse
+import boto3
+import pexpect
+import os
+import logging
+
+#logging.basicConfig(filename="ec2.log", level=logging.DEBUG)
+
+
+class ec2_helper():
+
+    def __init__(self, region):
+        self.user = os.getenv('USER')
+        self.region = region
+        self.ec2_resource = boto3.resource('ec2', region_name=self.region)
+        self.ec2_client = boto3.client('ec2', region_name=self.region)
+        self.s3_resource = boto3.resource('s3', region_name=self.region)
+        self.s3_client = boto3.client('s3', region_name=self.region)
+        self.account_id = boto3.resource('iam').CurrentUser().arn.split(':')[4]
+
+    def ami_work(self, entity, action, value="t2.medium"):
+        ec2_client = self.ec2_client
+        ec2 = self.ec2_resource
+
+        # instances = ec2.instances.all()
+        if entity == 'all':
+            print "getting all images"
+            # my_images = ec2.images.filter(Owners=[self.account_id])
+            my_images = ec2.images.filter(Owners=[self.account_id])
+
+        else:
+            my_images = ec2.images.filter(
+                Owners=[self.account_id], ImageIds=[entity])
+
+        print my_images
+
+        if action == 'delete':
+            images_in_use = set(
+                [instance.image_id for instance in ec2.instances.all()])
+
+            images_not_in_use = {
+                image.id: image for image in my_images if image.id not in images_in_use}
+
+            for image in images_not_in_use.values():
+                # created_date = datetime.strptime(
+                #     image.creation_date, "%Y-%m-%dT%H:%M:%S.000Z")
+                # if created_date < two_weeks_ago:
+                print "Deregistering--> %s" % str(image.id)
+                image.deregister()
+
+        if action == "info":
+            for image in my_images:
+                print image
+                print "\n" + "-" * 40 + " AMI " + image.id + "-" * 40
+                for k, v in vars(image).iteritems():
+                    print "{0:<25}:{1}".format(k, v)
+
+        # ami launch <ami-id> [type] [keypair]
+        if action == 'launch':
+            if 'ami' not in entity:
+                print "Need AMI id to launch"
+                return
+
+            ami = str(entity)
+            print "launch %s" % ami
+
+            key_name = ""
+            instances = ec2_client.instances.all()
+            for instance in instances:
+                if instance.state == 'running':
+                    print instance.key_name
+                    key_name = instance.key_name
+                    break
+            print "launching"
+            response = ec2_client.run_instances(image_id=ami,
+                                         instance_type=value, key_name=key_name)
+
+            for i in response['Instances']:
+                print "InstanceId: %s" % i.InstanceId
+
+        if action == 'tag':
+            for image in my_images:
+                image.add_tag("Name", value)
+
+    def volume_work(self, entity, action, value=None):
+        ec2_client = self.ec2_client
+        ec2 = self.ec2_resource
+
+        if entity == 'all':
+            print "getting all volumes"
+            # my_images = ec2.images.filter(Owners=[self.account_id])
+            # my_volumes = ec2.volumes.filter(Owners=[self.account_id])
+            my_volumes = ec2.volumes.all()
+
+        else:
+            my_volumes = ec2.volumes.filter(VolumeIds=[entity])
+
+        for volume in my_volumes:
+
+            if action == 'delete':
+                if volume.attach_data.instance_id is None:
+                    print "Deleting " + volume.id
+                    volume.delete()
+                else:
+                    print "Volume is attached: %s" % volume.id
+
+            if action == 'info':
+                print "\n" + "-" * 40 + " Volume " + volume.id + "-" * 40
+                for k, v in vars(volume).iteritems():
+                    print "{0:<25}:{1}".format(k, v)
+
+            if action == 'tag':
+                if value is None:
+                    print "Must give me a tag value"
+                    return
+                tags = {"Key": "Name", "Value": value}
+                volume.create_tags(Tags=[tags])
+
+    def instance_work(self, entity, action, value=None):
+        ec2_client = self.ec2_client
+        ec2 = self.ec2_resource
+
+        if entity == 'all':
+            print "getting all instances"
+            instances = ec2.instances.all()
+        else:
+            if 'i-' not in entity:
+                instances = ec2.instances.filter(
+                    Filters=[{'Name': 'tag:Name', 'Values': [entity]}])
+            else:
+                instances = ec2.instances.filter(InstanceIds=[entity])
+
+        instances_list = [i for i in instances]
+
+        if len(instances_list) == 0:
+            print "No instances found for %s in %s" % (entity, self.region)
+            return
+
+        def get_sort_key(inst):
+            return str(inst.launch_time)
+
+        instances_list = sorted(instances_list, key=get_sort_key)
+        print_header = 1
+        for i in instances_list:
+            inst_state = i.state['Name']
+            instance_name = ''
+            if i.tags is not None:
+                for tags in i.tags:
+                    if 'Key' in tags:
+                        if tags['Key'] == 'Name':
+                            instance_name = tags['Value']
+
+            if action == 'type':
+
+                if value is None:
+                    print "Need Instance type via value"
+                    return
+
+                if inst_state != 'stopped':
+                    print "instance must be stopped to change the type"
+                    return
+
+                print "Changing instance type from %s to %s" % (i.instance_type, value)
+                ec2_client.modify_instance_attribute(
+                    InstanceId=i.id, Attribute='instanceType', Value=value)
+
+            if action == 'status':
+                if print_header:
+                    print "%-30s %-20s %-10s %-15s %-15s %-15s %-20s %-20s" % ("Name", "id", "type", "nametag", "private ip", "Public ip", "state", "launch time")
+                    print "-" * 140
+                    print_header = 0
+
+                print "%-30s %-20s %-10s %-15s %-15s %-15s %-20s %-20s" % (instance_name, i.id, i.instance_type, i.image_id, i.private_ip_address, i.public_ip_address, inst_state, i.launch_time)
+                continue
+            if action == 'info':
+                for k, v in vars(i).iteritems():
+                    print "{0:<25}:{1}".format(k, v)
+                continue
+            if action == 'console':
+                instance = ec2.Instance(i.id)
+
+                co = instance.console_output()
+                print co['Output']
+                continue
+            if action == 'connect':
+                if inst_state == 'running':
+                    import socket
+                    hostname = socket.gethostname()
+                    if "bld" in hostname:
+                        print "---  ssh -t kamitch-lnx ssh -i %s.pem ec2-user@%s  ---" % (i.key_name, i.public_ip_address)
+                        cmd = "ssh -t kamitch-lnx ssh -i %s.pem ec2-user@%s" % (
+                            i.key_name, i.public_ip_address)
+                    else:
+                        print "---  ssh -i %s.pem ec2-user@%s  ---" % (i.key_name, i.public_ip_address)
+                        cmd = "ssh -i %s.pem ec2-user@%s" % (
+                            i.key_name, i.public_ip_address)
+                    child = pexpect.spawn(cmd)
+                    child.interact()
+                    break
+                else:
+                    print "instance is not connected!"
+
+            if action == 'tag':
+                if value is None:
+                    print "Must give me a tag value"
+                    return
+                tags = {"Key": "Name", "Value": value}
+                i.create_tags(Tags=[tags])
+
+            if action == 'reboot':
+                i.reboot()
+                continue
+            if action == 'start':
+                if inst_state == 'stopped':
+                    print "starting instance %s  %s" % (i.id, instance_name)
+                    i.start()
+                else:
+                    print "skipped: %s %s state is %s" % (i.id, instance_name, inst_state)
+                continue
+            if action == 'stop':
+                if inst_state == 'running':
+                    print "stopping instance %s %s" % (i.id, instance_name)
+                    i.stop()
+                else:
+                    print "skipped: %s %s state is %s" % (i.id, instance_name, inst_state)
+                continue
+            if action == 'terminate':
+                if inst_state != 'terminated' and inst_state != 'running':
+                    print "terminating instance %s %s" % (i.id, instance_name)
+                    try:
+                        i.terminate()
+                    except:
+                        continue
+                else:
+                    print "skipped: %s %s state is %s" % (i.id, instance_name, inst_state)
+                continue
+
+    def security_group_work(self, entity, action, value=None):
+        ec2_client = self.ec2_client
+        ec2 = self.ec2_resource
+
+        if entity == 'all':
+            print "getting all security groups"
+            securitygroups = ec2.security_groups.all()
+        else:
+            securitygroups = ec2.security_groups.filter(GroupIds=[entity])
+
+        if action == 'delete':
+            response = ec2_client.describe_security_groups()
+            all_sec_groups = []
+            for SecGrp in response['SecurityGroups']:
+                if entity != 'all':
+                    if entity in SecGrp['GroupId']:
+                        all_sec_groups.append(SecGrp['GroupId'])
+                        break
+                else:
+                    all_sec_groups.append(SecGrp['GroupId'])
+
+            sec_groups_in_use = []
+            response = ec2_client.describe_instances(
+                Filters=[
+                    {
+                        'Name': 'instance-state-name',
+                        'Values': ['running', 'stopped']
+                    }
+                ])
+
+            for r in response['Reservations']:
+                for inst in r['Instances']:
+                    if inst['SecurityGroups'][0]['GroupId'] not in sec_groups_in_use:
+                        sec_groups_in_use.append(
+                            inst['SecurityGroups'][0]['GroupId'])
+
+            unused_sec_groups = []
+
+            for groups in all_sec_groups:
+                if groups not in sec_groups_in_use:
+                    unused_sec_groups.append(groups)
+                    print groups
+                    try:
+                        security_group = ec2.SecurityGroup(groups)
+
+                        security_group.delete()
+                    except Exception as err:
+                        print err
+                        pass
+
+        if action == 'tag':
+            if value is None:
+                print "Need tag value"
+                return
+            tags = {"Key": "Name", "Value": value}
+            for sg in securitygroups:
+                sg.create_tags(Tags=[tags])
+
+            # if argument == 'delete':
+
+        if action == 'info':
+            print "\n" + "-" * 40 + " Security Group " + sg.id + "-" * 40
+            for k, v in vars(sg).iteritems():
+                print "{0:<25}:{1}".format(k, v)
+
+    def snapshot_group_work(self, entity, action, value=None):
+        ec2_client = self.ec2_client
+        ec2 = self.ec2_resource
+
+        if entity == 'all':
+            print "getting all snapshots"
+            snapshots = ec2.snapshots.filter(OwnerIds=[self.account_id])
+        else:
+            snapshots = ec2.snapshots.filter(
+                SnapshotIds=[entity], OwnerIds=[self.account_id])
+
+        for snapshot in snapshots:
+            if action == 'delete':
+                volumes = ec2.volumes.filter(Filters=[{'Name': 'snapshot-id', 'Values': [entity]}])
+                volumes_list = [v for v in volumes]
+
+                # volumes = conn.get_all_volumes(
+                # filters={'snapshot-id': snapshot.id})
+                if len(volumes_list) > 0:
+                    print "Not Deleting, volume still attached-->" + str(snapshot.volume_id)
+                else:
+                    print "Deleting --> " + str(snapshot.id)
+                    try:
+                        snapshot.delete()
+                    except Exception as err:
+                        print "Failed Deleting --> %s, Error %s" % (str(snapshot.id), err)
+                        continue
+
+            if action == 'info':
+                print "\n" + "-" * 40 + " Snapshot " + snapshot.id + "-" * 40
+                for k, v in vars(snapshot).iteritems():
+                    print "{0:<25}:{1}".format(k, v)
+
+            if action == 'tag':
+                if value is None:
+                    print "Need tag value"
+                    return
+                tags = {"Key": "Name", "Value": value}
+                snapshot.create_tags(Tags=[tags])
+
+    def vpc_group_work(self, entity, action, value=None):
+        ec2_client = self.ec2_client
+        ec2 = self.ec2_resource
+
+        if entity == 'all':
+            print "getting all snapshots"
+            vpcs = ec2.vpcs.all()
+        else:
+            vpcs = ec2.vpcs.filter(
+                VpcIds=[entity])
+
+        for vpc in vpcs:
+            print vpc
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Helper Script for AWS")
+    parser.add_argument(
+        'type', help='What type of service are we operating on?')
+    parser.add_argument(
+        'entity', help='Which one do you want to operate on (or all)?')
+    parser.add_argument(
+        'action', help='What do you want to do to this entity?')
+    parser.add_argument(
+        '--value', help='Optional value based on command', default=None)
+    parser.add_argument(
+        '--region', help='Which region do you want to do this on ?', default='us-east-1')
+    args = parser.parse_args()
+    helper = ec2_helper(args.region)
+
+    if args.type == "ami":
+        helper.ami_work(args.entity, args.action, args.value)
+    if args.type == "volume":
+        helper.volume_work(args.entity, args.action, args.value)
+    if args.type == "instance":
+        helper.instance_work(args.entity, args.action, args.value)
+    if args.type == "securitygroup":
+        helper.security_group_work(args.entity, args.action, args.value)
+    if args.type == "snapshot":
+        helper.snapshot_group_work(args.entity, args.action, args.value)
+    if args.type == "vpc":
+        helper.vpc_group_work(args.entity, args.action, args.value)
+
+    if args.type == "cleanup":
+        helper.volume_work("all", "delete")
+        helper.snapshot_group_work("all", "delete")
+        helper.ami_work("all", "delete")
+        helper.security_group_work("all", "delete")
+        # helper.instance_work("all", "terminate")
