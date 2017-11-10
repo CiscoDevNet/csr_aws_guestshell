@@ -71,8 +71,14 @@ def get_datapath_util():
         if m:
             # print "%s --> %s %s %s %s" % (row_names[i],
             # m.group('fivesecs'),m.group('onemin'),m.group('fivemin'),m.group('onehour'))
-            csr.send_metric(row_names[i], m.group(
+            csr.send_metric(row_names[i] + '_fivesecs', m.group(
                 'fivesecs'), "datapath utilization")
+            csr.send_metric(row_names[i] + '_onemin', m.group(
+                'onemin'), "datapath utilization")
+            csr.send_metric(row_names[i] + '_fivemin', m.group(
+                'fivemin'), "datapath utilization")
+            csr.send_metric(row_names[i] + '_onehour', m.group(
+                'onehour'), "datapath utilization")
             i = i + 1
 
 

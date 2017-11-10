@@ -90,7 +90,9 @@ class cag():
                          'Dimensions': [
                              {
                                  "Name": "PerInstanceStatistics",
-                                 "Value": category,
+                                 "Value": category
+                             },
+                             {
                                  "Name": "Instance-id",
                                  "Value": self.instance_id
                              }
