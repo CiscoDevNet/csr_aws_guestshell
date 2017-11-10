@@ -1,6 +1,6 @@
 from distutils.core import setup
 project_name = 'csr_aws_guestshell'
-project_ver = '0.0.6.dev'
+project_ver = '0.0.8.dev'
 setup(
     name=project_name,
     packages=[project_name],  # this must be the same as the name above
