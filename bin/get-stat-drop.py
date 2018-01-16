@@ -6,28 +6,27 @@ import argparse
 from csr_aws_guestshell import cag
 
 csr = cag()
-print_output = 0
 
-def print_cmd_output(command, output):
+def print_cmd_output(command, output, print_output):
     if print_output:
         col_space = (80 - (len(command))) / 2
         print "\n%s %s %s" % ('=' * col_space, command, '=' * col_space)
         print "%s \n%s" % (output, '=' * 80)
 
 
-def execute_command(command):
+def execute_command(command, print_output):
     cmd_output = cli.execute(command)
     while len(cmd_output) == 0:
         print "CMD FAILED, retrying"
         cmd_output = cli.execute(command)
 
-    print_cmd_output(command, cmd_output)
+    print_cmd_output(command, cmd_output, print_output)
     return cmd_output
 
 
-def get_stat_drop():
+def get_stat_drop(print_output):
     cmd_output = execute_command(
-        "show platform hardware qfp active statistics drop clear")
+        "show platform hardware qfp active statistics drop clear", print_output)
 
     if "all zero" in cmd_output:
         csr.send_metric("TailDrop", int(0), "Statistics drops")
@@ -41,13 +40,14 @@ def get_stat_drop():
             continue
 
         entries = line.split()
-        print "%s --> %s/%s" % (entries[0], entries[1], entries[2])
+        if print_output:
+            print "%s --> %s/%s" % (entries[0], entries[1], entries[2])
         csr.send_metric(entries[0], int(entries[1]), "Statistics drops")
 
 
-def get_datapath_util():
+def get_datapath_util(print_output):
     cmd_output = execute_command(
-        "show platform hardware qfp active datapath utilization")
+        "show platform hardware qfp active datapath utilization", print_output)
 
     row_names = [
         "input_priority_pps",
@@ -82,8 +82,8 @@ def get_datapath_util():
             i = i + 1
 
 
-def show_interface():
-    cmd_output = execute_command("show interface summary")
+def show_interface(print_output):
+    cmd_output = execute_command("show interface summary", print_output)
     table_start = 0
     for line in cmd_output.splitlines():
         if 'Interface' in line:
@@ -95,7 +95,7 @@ def show_interface():
             continue
         entries = line.lstrip('*').split()
         cmd = "show interface %s" % (entries[0])
-        interface_output = execute_command(cmd)
+        interface_output = execute_command(cmd, print_output)
         m = re.search(
             r'.*\s+(?P<packets_input>\d+) packets input.*\s+(?P<bytes_input>\d+) bytes.*', interface_output)
         if m:
@@ -131,9 +131,10 @@ def show_interface():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Upload Stats to custom metrics")
-    parser.add_argument('--print', help='Print Out ', default=None)
+    parser.add_argument('--display', help='Show Output ', action='store_true')
+
     args = parser.parse_args()
 
-    get_stat_drop()
-    get_datapath_util()
-    show_interface()
+    get_stat_drop(args.display)
+    get_datapath_util(args.display)
+    show_interface(args.display)

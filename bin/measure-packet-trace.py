@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import cli
 import sys
 import argparse
@@ -10,57 +11,88 @@ import csv
 parser = argparse.ArgumentParser(
     description="Enable Packet trace and measure time for FIA")
 parser.add_argument(
-    '--clear', help='do not clear of packet trace statistics', default=1)
+    '--clear',
+    help='do not clear of packet trace statistics',
+    default=1)
 parser.add_argument(
-    '--filename', help='name of csv file to export values to', default="packet-trace.csv")
+    '--filename',
+    help='name of csv file to export values to',
+    default="packet-trace.csv")
 parser.add_argument('--pktnum', help='print details on pktnum', default=None)
-parser.add_argument('--seconds', help='Seconds to capture', default=1)
+parser.add_argument('--seconds', help='Seconds to capture', default=15)
 parser.add_argument('--showonly', help='operate on previous list', default=0)
 parser.add_argument(
-    '--pktbypkt', help='retrieve packet by packet', default=True)
+    '--pktbypkt',
+    help='retrieve packet by packet',
+    default=True)
 parser.add_argument(
-    '--pktcnt', help='number of packets to capture', default=128, type=int)
+    '--pktcnt',
+    help='number of packets to capture',
+    default=290,
+    type=int)
 
 args = parser.parse_args()
+file = open('binaryfile', 'wb')
+output = ''
+packets_retrieved = 0
+start = 0
+num_of_loops = (args.pktcnt / 100) + 1
+time_delay = (args.seconds / num_of_loops)
+end = time_delay
+print "executing CLI..."
 
-if args.showonly == 0 and args.pktnum is None:
-    print "executing CLI..."
+while(args.pktcnt > 0):
+    if(args.pktcnt <= 100):
+        args.adjpktcnt = args.pktcnt
+    else:
+        args.adjpktcnt = 100
+    if args.showonly == 0 and args.pktnum is None:
+        # print "executing CLI..."
 
-    if args.clear is not None:
-        cli.execute("clear platform packet-trace config")
-        cli.execute("clear platform packet-trace statistics")
-    cli.execute("debug platform condition both")
-    cli.execute(
-        "debug platform packet-trace packet %u fia-trace data-size 2048" % (args.pktcnt))
-    cli.execute("debug platform condition start")
+        if args.clear is not None:
+            cli.execute("clear platform packet-trace config")
+            cli.execute("clear platform packet-trace statistics")
+        cli.execute("debug platform condition both")
+        cli.execute(
+            "debug platform packet-trace packet %u fia-trace data-size 2048" %
+            (args.adjpktcnt))
+        cli.execute("debug platform condition start")
 
-    for i in range(0, int(args.seconds)):
-        time.sleep(1)
-        sys.stdout.write("\r%d secs" % (i + 1))
-        sys.stdout.flush()
+        for i in range(start, end):
+            time.sleep(1)
+            sys.stdout.write("\r%d secs" % (i + 1))
+            sys.stdout.flush()
 
-    print "\n"
+        start = start + time_delay
+        end = end + time_delay
 
-    cli.execute("debug platform condition stop")
+        cli.execute("debug platform condition stop")
 
-print "retrieving CLI..."
+    if args.pktbypkt is False:
+        output = cli.execute("show platform packet-trace packet all decode")
+    else:
+        pkt_num = 0
+        while True:
+            cmd = cli.execute(
+                "show platform packet-trace packet %d decode | inc (Packet|Start|Stop|Feature|Lapsed)" %
+                (pkt_num))
+            if "Invalid" in cmd or len(cmd) == 0:
+                break
+            temp = 20  # cmd.rindex('C')
+            x = cmd[temp:len(cmd)]
+            y = cmd[0:temp]
+            y = "Packet: %d " % (pkt_num + packets_retrieved)
+            cmd = y + x
+            # print(cmd)
+            output += (cmd + "\n")
+            pkt_num = pkt_num + 1
+        # print "Retrieved %d packets" % pkt_num
+        packets_retrieved += pkt_num
+    args.pktcnt = args.pktcnt - 100
 
-
-if args.pktbypkt is False:
-    output = cli.execute("show platform packet-trace packet all decode")
-else:
-    output = ""
-    pkt_num = 0
-    while True:
-        cmd = cli.execute(
-            "show platform packet-trace packet %d decode | inc (Packet|Start|Stop|Feature|Lapsed)" % (pkt_num))
-        if "Invalid" in cmd or len(cmd) == 0:
-            break
-        output += (cmd + "\n")
-        pkt_num = pkt_num + 1
-    print "Retrieved %d packets" % pkt_num
-
-
+print "\n"
+print "Retrieving CLI..."
+print "Retrieved %d packets" % packets_retrieved
 features = defaultdict(list)
 packets = {}
 times = []
@@ -92,7 +124,6 @@ for line in output.splitlines():
 
     if "Lapsed time" in line:
         lapsed_time = int(line.split(":")[1].split()[0])
-
         features[feature_name].append(
             (packet_num, lapsed_time, feature_lines))
 
@@ -134,8 +165,14 @@ for feature, tuple_list in features.iteritems():
     minimum = min(tuple_list, key=lambda item: item[1])
     maximum = max(tuple_list, key=lambda item: item[1])
     median = sorted([(lambda x: x[1])(x) for x in tuple_list])[int(cnt / 2)]
-    data_list.append((feature, cnt, pkt_num, minimum[
-                     1], maximum[1], median, average))
+    data_list.append(
+        (feature,
+         cnt,
+         pkt_num,
+         minimum[1],
+         maximum[1],
+         median,
+         average))
 
 
 data_sorted = sorted(data_list, key=lambda x: x[5], reverse=True)
@@ -158,8 +195,13 @@ for entry in data_sorted:
 with open('/bootflash/' + args.filename, 'wb') as csvfile:
     csvwriter = csv.writer(csvfile, delimiter=',',
                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
-    csvwriter.writerow(
-        ["Feature Name", "Count", "Packet Number", "Minimum", "Maximum", "Average", "Median"])
+    csvwriter.writerow(["Feature Name",
+                        "Count",
+                        "Packet Number",
+                        "Minimum",
+                        "Maximum",
+                        "Average",
+                        "Median"])
     for entry in data_sorted:
         feature = entry[0]
         cnt = entry[1]
@@ -179,3 +221,6 @@ with open('/bootflash/' + args.filename, 'wb') as csvfile:
     for i, pkt in packets.iteritems():
         for line in pkt:
             csvwriter.writerow([line])
+
+with open('/bootflash/' + args.filename, 'rb') as f:
+    file.write(f.read())

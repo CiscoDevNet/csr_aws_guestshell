@@ -1,9 +1,16 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 import sys
 import getopt
 import json
 import boto3
+import os
 from boto.utils import get_instance_metadata
+
+metadata = get_instance_metadata(timeout=2, num_retries=1)
+
+if metadata:
+    region = metadata['placement']['availability-zone'][:-1]
+    os.environ["AWS_DEFAULT_REGION"] = region
 
 ec2 = boto3.resource('ec2')
 client = boto3.client('ec2')

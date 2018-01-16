@@ -34,6 +34,9 @@ List of scripts to be installed:
 * [```save-config-to-s3.py```](bin/save-config-to-s3.py) -- saves CSR1000V config to bootflash and uploads to AWS S3 bucket
 * [```save-tech-support-to-s3.py```](bin/save-tech-support-to-s3.py) -- saves CSR1000V tech-support output to bootflash and uploads to AWS S3 bucket
 * [```load-bin-from-s3.py```](bin/load-bin-from-s3.py) -- copies CSR1000V config from S3 to bootflash and then copies to running-config
+* [```measure-packet-trace.py```](bin/measure-packet-trace.py) -- Enables packet trace via CLI, retrieves results, and sorts based on longest execution
+* [```get-stat-drop.py```](bin/get-stat-drop.py) -- Retrieves statistics from cli and publishes them to Cloudwatch
+* [```monitor-vpn.py```](bin/monitor-vpn.py) -- Uploads Number of Tunnels that are up to Cloudwatch
 
 ## Example output from running via IOS shell:
 
