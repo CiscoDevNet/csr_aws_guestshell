@@ -131,10 +131,14 @@ def show_interface(print_output):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Upload Stats to custom metrics")
-    parser.add_argument('--display', help='Show Output ', action='store_true')
+    parser.add_argument('--display', help='Show Output', action='store_true')
+    parser.add_argument('--category', help='Send ', default="all")
 
     args = parser.parse_args()
 
-    get_stat_drop(args.display)
-    get_datapath_util(args.display)
-    show_interface(args.display)
+    if args.category in ["all", "drops"]:
+        get_stat_drop(args.display)
+    if args.category in ["all", "util"]:
+        get_datapath_util(args.display)
+    if args.category in ["all", "interface"]:
+        show_interface(args.display)

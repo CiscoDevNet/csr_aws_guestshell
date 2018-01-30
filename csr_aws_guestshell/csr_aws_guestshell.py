@@ -89,11 +89,7 @@ class cag():
                          'Unit': 'Count',
                          'Dimensions': [
                              {
-                                 "Name": "PerInstanceStatistics",
-                                 "Value": category
-                             },
-                             {
-                                 "Name": "Instance-id",
+                                 "Name": "Instanceid",
                                  "Value": self.instance_id
                              }
                          ],
