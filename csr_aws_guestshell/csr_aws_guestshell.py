@@ -89,7 +89,7 @@ class cag():
                          'Unit': 'Count',
                          'Dimensions': [
                              {
-                                 "Name": "Instanceid",
+                                 "Name": "InstanceId",
                                  "Value": self.instance_id
                              }
                          ],
