@@ -20,7 +20,7 @@ parser.add_argument(
     default="packet-trace.csv")
 parser.add_argument('--pktnum', help='print details on pktnum', default=None)
 parser.add_argument('--seconds', help='Seconds to capture', default=15)
-parser.add_argument('--showonly', help='operate on previous list', action='store_true')
+parser.add_argument('--showonly', help='operate on previous list', default=0)
 parser.add_argument(
     '--pktbypkt',
     help='retrieve packet by packet',
@@ -46,7 +46,7 @@ while(args.pktcnt > 0):
         args.adjpktcnt = args.pktcnt
     else:
         args.adjpktcnt = 100
-    if args.showonly and args.pktnum is None:
+    if args.showonly == 0 and args.pktnum is None:
         # print "executing CLI..."
 
         if args.clear is not None:
