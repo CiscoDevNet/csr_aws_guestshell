@@ -81,6 +81,19 @@ def get_datapath_util(print_output):
                 'onehour'), "datapath utilization")
             i = i + 1
 
+def show_gig_interface_summary():
+    cmd_output = execute_command("show interfaces summary")
+    total_txbps = 0
+    total_rxbps = 0
+    for line in cmd_output.splitlines():
+        if "Giga" in line:
+            total_txbps += int(line.split()[-3])
+            total_rxbps += int(line.split()[-5])
+
+    csr.send_metric("output_gig_interface_summary_bps", total_txbps, "aggregate gig interfaces bps")
+    csr.send_metric("input_gig_interface_summary_bps", total_rxbps, "aggregate gig interfaces bps")
+    print("Total TxBPS: %d" % total_txbps)
+    print("Total RxBPS: %d" % total_rxbps)
 
 def show_interface(print_output):
     cmd_output = execute_command("show interface summary", print_output)
@@ -142,3 +155,5 @@ if __name__ == "__main__":
         get_datapath_util(args.display)
     if args.category in ["all", "interface"]:
         show_interface(args.display)
+    if args.category in ["all", "interface_summary"]:
+        show_gig_interface_summary()
