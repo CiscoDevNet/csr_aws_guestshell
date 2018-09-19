@@ -92,8 +92,6 @@ def show_gig_interface_summary():
 
     csr.send_metric("output_gig_interface_summary_bps", total_txbps, "aggregate gig interfaces bps")
     csr.send_metric("input_gig_interface_summary_bps", total_rxbps, "aggregate gig interfaces bps")
-    print("Total TxBPS: %d" % total_txbps)
-    print("Total RxBPS: %d" % total_rxbps)
 
 def show_interface(print_output):
     cmd_output = execute_command("show interface summary", print_output)
