@@ -155,3 +155,4 @@ if __name__ == "__main__":
         show_interface(args.display)
     if args.category in ["all", "interface_summary"]:
         show_gig_interface_summary(args.display)
+
