@@ -1,6 +1,7 @@
 from distutils.core import setup
+import setuptools 
 project_name = 'csr_aws_guestshell'
-project_ver = '0.0.16.dev'
+project_ver = '0.0.17.dev'
 setup(
     name=project_name,
     packages=[project_name],  # this must be the same as the name above
@@ -24,5 +25,6 @@ setup(
         'awscli',
         'boto',
         'boto3',
+        'future',
     ],
 )

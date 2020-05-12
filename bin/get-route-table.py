@@ -1,4 +1,8 @@
 #!/usr/bin/python
+
+from __future__ import print_function
+from builtins import *
+from past.utils import old_div
 import sys
 import getopt
 import json
@@ -20,8 +24,8 @@ subnet_to_route_table = {}
 
 
 def print_instance_header():
-    print "%-30s %-20s %-10s %-15s %-15s %-15s %-10s %-20s" % ("Name", "id", "type", "nametag", "private ip", "Public ip", "state", "launch time")
-    print "-" * 140
+    print("%-30s %-20s %-10s %-15s %-15s %-15s %-10s %-20s" % ("Name", "id", "type", "nametag", "private ip", "Public ip", "state", "launch time"))
+    print("-" * 140)
 
 
 def print_instance_info(i):
@@ -33,26 +37,26 @@ def print_instance_info(i):
 
     # if 'Name' in i.tags:
     #     instance_name = i.tags['Name']
-    print "%-30s %-20s %-10s %-15s %-15s %-15s %-10s %-20s" % \
+    print("%-30s %-20s %-10s %-15s %-15s %-15s %-10s %-20s" % \
         (instance_name[:30], i.id, i.instance_type, i.image_id,
-         i.private_ip_address, i.public_ip_address, i.state['Name'], i.launch_time)
+         i.private_ip_address, i.public_ip_address, i.state['Name'], i.launch_time))
 
 
 def print_metadata_info(metadata):
     region = metadata['placement']['availability-zone'][:-1]
     instance_id = metadata['instance-id']
-    print "Region is %s, Instance Id is %s" % (region, instance_id)
+    print("Region is %s, Instance Id is %s" % (region, instance_id))
     if dump_json:
-        print json.dumps(metadata, sort_keys=True, indent=2)
+	    print(json.dumps(metadata, sort_keys=True, indent=2))
 
 
 def print_vpc_header(vpc_id):
-    sidecnt = (140 - len(vpc_id)) / 2
-    print "\n" * 2 + "=" * sidecnt + vpc_id + "=" * sidecnt
-    print "%-20s %-15s %-10s %-15s %-15s %-15s %-15s %-15s %-15s" % \
+    sidecnt = old_div((140 - len(vpc_id)), 2)
+    print("\n" * 2 + "=" * sidecnt + vpc_id + "=" * sidecnt)
+    print("%-20s %-15s %-10s %-15s %-15s %-15s %-15s %-15s %-15s" % \
         ("Name", "vpc-id", "state", "ipv4-cidr", "ipv6-cidr",
-         "DHCP options", "Route Table", "Network ACL", "Tenancy")
-    print "-" * 140
+         "DHCP options", "Route Table", "Network ACL", "Tenancy"))
+    print("-" * 140)
 
 
 def print_vpc_info(vpc):
@@ -82,9 +86,9 @@ def print_vpc_info(vpc):
         default = "*" + vpc.id
     else:
         default = vpc.id
-    print "%-20s %-15s %-10s %-15s %-15s %-15s %-15s %-15s %-15s" % \
+    print("%-20s %-15s %-10s %-15s %-15s %-15s %-15s %-15s %-15s" % \
         (vpc_name[:30], default, vpc.state, vpc.cidr_block, ipv6_cidr,
-         vpc.dhcp_options_id, route_tbl, acl_id, vpc.instance_tenancy)
+         vpc.dhcp_options_id, route_tbl, acl_id, vpc.instance_tenancy))
 
 
 def print_route_info(vpc):
@@ -106,11 +110,11 @@ def print_route_info(vpc):
     if dump_json:
         print(json.dumps(resp_rt_table, indent=2))
 
-    print "\n* -- interface on this instance"
-    print "%-20s %-20s %-20s %-20s %-20s %-20s %-20s" % \
+    print("\n* -- interface on this instance")
+    print("%-20s %-20s %-20s %-20s %-20s %-19s %-20s" % \
         ("Route Table", "Destination", "Target",
-         "Status", "Assoc id", "subnet", "Propagated")
-    print "-" * 140
+         "Status", "Assoc id", "subnet", "Propagated"))
+    print("-" * 140)
 
     for r in (resp_rt_table['RouteTables']):
         for a in r['Associations']:
@@ -142,9 +146,9 @@ def print_route_info(vpc):
                 destinationblock = route['DestinationCidrBlock']
             else:
                 destinationblock = "NoCidr"
-            print "%-20s %-20s %-20s %-20s %-20s %-20s %-20s" % \
+            print("%-20s %-20s %-20s %-20s %-20s %-20s %-20s" % \
                 (r['RouteTableId'], destinationblock,
-                 gateway, route['State'], rtb_assoc_id, subnet, propagated)
+                 gateway, route['State'], rtb_assoc_id, subnet, propagated))
 
 
 def print_subnet_info(vpc):
@@ -152,19 +156,19 @@ def print_subnet_info(vpc):
 
     subnets = vpc.subnets.all()
 
-    print "\n%-20s %-10s %-15s %-15s %-15s %-20s %-20s %-20s" % \
+    print("\n%-20s %-10s %-15s %-15s %-15s %-20s %-20s %-20s" % \
         ("subnet-id", "state", "vpc-id", "ipv4-cidr",
-         "Available ipv4", "ipv6 cidr", "Avail. Zone", "Route Table")
-    print "-" * 140
+         "Available ipv4", "ipv6 cidr", "Avail. Zone", "Route Table"))
+    print("-" * 140)
 
     for snet in subnets:
         if snet.id in subnet_to_route_table:
             route_table = subnet_to_route_table[snet.id]
         else:
             route_table = subnet_to_route_table['default']
-        print "%-20s %-10s %-15s %-15s %-15s %-20s %-20s %-20s" % \
+        print("%-20s %-10s %-15s %-15s %-15s %-20s %-20s %-20s" % \
             (snet.id, snet.state, snet.vpc_id, snet.cidr_block, snet.available_ip_address_count,
-             snet.ipv6_cidr_block_association_set, snet.availability_zone, route_table)
+             snet.ipv6_cidr_block_association_set, snet.availability_zone, route_table))
 
 
 def get_vpc_info(vpc_id):
@@ -176,7 +180,7 @@ def get_vpc_info(vpc_id):
     vpclist = vpc.instances.all()
     instance_count = sum(1 for _ in vpclist)
     if (instance_count):
-        print "\nVpc %s has %s instances" % (vpc_id, instance_count)
+        print("\nVpc %s has %s instances" % (vpc_id, instance_count))
         print_instance_header()
     for instance in vpclist:
         print_instance_info(instance)
@@ -204,7 +208,7 @@ def main(argv):
                 global dump_json
                 dump_json = 1
     # our instance
-    print "Determining if we are running on AWS..."
+    print("Determining if we are running on AWS...")
     metadata = get_instance_metadata(timeout=2, num_retries=1)
 
     if metadata:
@@ -215,7 +219,7 @@ def main(argv):
             eni = vpc_info["interface-id"]
             vpc_id = vpc_info["vpc-id"]
 
-            print "VPC: %s ENI %s" % (vpc_id, eni)
+            print("VPC: %s ENI %s" % (vpc_id, eni))
             print_vpc_header(vpc_id)
             get_vpc_info(vpc_id)
     else:

@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+from __future__ import print_function
+from builtins import *
+from builtins import range
 import cli
 import sys
 from csr_aws_guestshell import cag
@@ -31,7 +34,7 @@ for i in range(0, int(args.seconds)):
     sys.stdout.write("\r%d secs" % (i + 1))
     sys.stdout.flush()
 
-print "\n"
+print("\n")
 
 cli.execute("monitor capture PKT_CAP stop")
 cmd = "monitor capture PKT_CAP export bootflash:%s" % filename

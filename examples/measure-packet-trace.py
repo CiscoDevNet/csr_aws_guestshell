@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+from __future__ import print_function
+from builtins import *
+from builtins import range
+from past.utils import old_div
 import cli
 import sys
 import argparse
@@ -126,14 +130,14 @@ if len(time_sorted) > 0:
 
 print "Storing list..."
 data_list = []
-for feature, tuple_list in features.iteritems():
+for feature, tuple_list in list(features.items()):
     cnt = len(tuple_list)
     total = sum([t[1] for t in tuple_list])
     pkt_num = t[0]
     average = int(float(total) / cnt)
     minimum = min(tuple_list, key=lambda item: item[1])
     maximum = max(tuple_list, key=lambda item: item[1])
-    median = sorted([(lambda x: x[1])(x) for x in tuple_list])[int(cnt / 2)]
+    median = sorted([(lambda x: x[1])(x) for x in tuple_list])[int(old_div(cnt, 2))]
     data_list.append((feature, cnt, pkt_num, minimum[
                      1], maximum[1], median, average))
 
@@ -171,10 +175,10 @@ with open('/bootflash/' + args.filename, 'wb') as csvfile:
             [feature, cnt, pkt_num, minimum, maximum, average, median])
 
     csvwriter.writerow(["Feature Name", "Packet Number", "Lapsed time"])
-    for feature, tuple_list in features.iteritems():
+    for feature, tuple_list in list(features.items()):
         for t in tuple_list:
             csvwriter.writerow([feature, t[0], t[1]])
 
-    for i, pkt in packets.iteritems():
+    for i, pkt in list(packets.items()):
         for line in pkt:
             csvwriter.writerow([line])

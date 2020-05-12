@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+from __future__ import print_function
+from builtins import *
+from past.utils import old_div
 import cli
 import re
 import argparse
@@ -9,15 +12,15 @@ csr = cag()
 
 def print_cmd_output(command, output, print_output):
     if print_output:
-        col_space = (80 - (len(command))) / 2
-        print "\n%s %s %s" % ('=' * col_space, command, '=' * col_space)
-        print "%s \n%s" % (output, '=' * 80)
+        col_space = old_div((80 - (len(command))), 2)
+        print("\n%s %s %s" % ('=' * col_space, command, '=' * col_space))
+        print("%s \n%s" % (output, '=' * 80))
 
 
 def execute_command(command, print_output):
     cmd_output = cli.execute(command)
     while len(cmd_output) == 0:
-        print "CMD FAILED, retrying"
+        print("CMD FAILED, retrying")
         cmd_output = cli.execute(command)
 
     print_cmd_output(command, cmd_output, print_output)
@@ -41,7 +44,7 @@ def get_stat_drop(print_output):
 
         entries = line.split()
         if print_output:
-            print "%s --> %s/%s" % (entries[0], entries[1], entries[2])
+            print("%s --> %s/%s" % (entries[0], entries[1], entries[2]))
         csr.send_metric(entries[0], int(entries[1]), "Statistics drops")
 
 
@@ -81,8 +84,8 @@ def get_datapath_util(print_output):
                 'onehour'), "datapath utilization")
             i = i + 1
 
-def show_gig_interface_summary():
-    cmd_output = execute_command("show interfaces summary")
+def show_gig_interface_summary(print_output):
+    cmd_output = execute_command("show interfaces summary", print_output)
     total_txbps = 0
     total_rxbps = 0
     for line in cmd_output.splitlines():
@@ -154,4 +157,4 @@ if __name__ == "__main__":
     if args.category in ["all", "interface"]:
         show_interface(args.display)
     if args.category in ["all", "interface_summary"]:
-        show_gig_interface_summary()
+        show_gig_interface_summary(args.display)

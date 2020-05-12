@@ -1,4 +1,9 @@
 #!/usr/bin/env python
+from __future__ import print_function
+from builtins import *
+from builtins import input
+from builtins import object
+from past.utils import old_div
 import argparse
 import os
 import pexpect
@@ -13,7 +18,7 @@ except ImportError:
     guestshell = False
 
 
-class csr_cli():
+class csr_cli(object):
     def __init__(self):
         try:
             imp.find_module('cli')
@@ -114,7 +119,7 @@ class csr_cli():
                 #     continue
 
                 command = command[-60:]
-                col_space = (80 - (len(command) + 4)) / 2
+                col_space = old_div((80 - (len(command) + 4)), 2)
                 total = (col_space * 2) + len(command) + 4 + 2
                 diff = (total - 80) + 1
                 if print_output is not None:
@@ -405,12 +410,12 @@ csr = csr_cli()
 
 if csr.guestshell is False:
     if args.ip is None:
-        hostname = raw_input('hostname: ')
+        hostname = input('hostname: ')
     else:
         hostname = args.ip
 
     if args.user is None:
-        username = raw_input('username: ')
+        username = input('username: ')
     else:
         username = args.user
 

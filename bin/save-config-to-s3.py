@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+from builtins import *
 import sys
 import cli
 from csr_aws_guestshell import cag
@@ -16,7 +18,7 @@ filename = args.filename
 get_config = "copy running-config bootflash:%s" % filename
 result = cli.execute(get_config)
 if 'copied' not in result:
-    print result
+    print(result)
     sys.exit(1)
 
 result = result.splitlines()
@@ -24,6 +26,6 @@ result = result.splitlines()
 # print output of ios cli output showing the config copy
 for line in result:
     if 'copied' in line:
-        print line
+        print(line)
 
 cag().upload_file(bucket, filename)

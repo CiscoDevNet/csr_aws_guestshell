@@ -1,4 +1,7 @@
 #!/usr/bin/python
+from __future__ import print_function
+from builtins import *
+from past.utils import old_div
 import cli
 import argparse
 
@@ -6,15 +9,15 @@ from csr_aws_guestshell import cag
 
 
 def print_cmd_output(command, output):
-    col_space = (80 - (len(command))) / 2
-    print "\n%s %s %s" % ('=' * col_space, command, '=' * col_space)
-    print "%s \n%s" % (output, '=' * 80)
+    col_space = old_div((80 - (len(command))), 2)
+    print("\n%s %s %s" % ('=' * col_space, command, '=' * col_space))
+    print("%s \n%s" % (output, '=' * 80))
 
 
 def execute_command(command, print_output):
     cmd_output = cli.execute(command)
     while len(cmd_output) == 0:
-        print "CMD FAILED, retrying"
+        print("CMD FAILED, retrying")
         cmd_output = cli.execute(command)
 
     if print_output:
@@ -34,7 +37,7 @@ def get_tunnel_number(print_output):
         if entries[4] == "up" and entries[5] == "up":
             TunnelNumber += 1
 
-    print "TunnelNumber is %s" % (TunnelNumber)
+    print("TunnelNumber is %s" % (TunnelNumber))
     csr.send_metric("TunnelNumber", TunnelNumber, "VPN Status")
 
 
