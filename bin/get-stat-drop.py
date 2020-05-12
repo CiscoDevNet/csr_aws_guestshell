@@ -45,7 +45,7 @@ def get_stat_drop(print_output):
         entries = line.split()
         if print_output:
             print("%s --> %s/%s" % (entries[0], entries[1], entries[2]))
-        csr.send_metric(entries[0], int(entries[1]), "Statistics drops")
+        csr.send_metric(entries[0], (entries[1]), "Statistics drops")
 
 
 def get_datapath_util(print_output):
@@ -69,6 +69,8 @@ def get_datapath_util(print_output):
 
     i = 0
     for line in cmd_output.splitlines():
+        if i >= len(row_names):
+                break
         m = re.search(
             r'.*\s+(?P<fivesecs>\d+)\s+(?P<onemin>\d+)\s+(?P<fivemin>\d+)\s+(?P<onehour>\d+)', line)
         if m:
