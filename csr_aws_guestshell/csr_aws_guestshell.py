@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+from __future__ import print_function
+from builtins import *
+from builtins import object
+from past.utils import old_div
 import boto3
 import sys
 import threading
@@ -7,7 +11,7 @@ from boto.utils import get_instance_metadata
 # import syslog
 
 
-class cag():
+class cag(object):
     def __init__(self):
         self.metadata = self.get_metadata()
         self.region = self.metadata['placement']['availability-zone'][:-1]
@@ -32,7 +36,7 @@ class cag():
         def __call__(self, bytes_amount):
             with self._lock:
                 self._seen_so_far += bytes_amount
-                percentage = (float(self._seen_so_far) * 100 / self._size)
+                percentage = (old_div(float(self._seen_so_far) * 100, self._size))
 
                 sys.stdout.write(
                     "\r%s  %s / %d  (%.2f%%)" % (
@@ -47,9 +51,9 @@ class cag():
             self.s3_client.download_file(
                 bucket, filename, directory + filename, Callback=self.ProgressPercentage(directory + filename, self))
         except Exception as e:
-            print "Downloading file Failed.  Error: %s" % (e)
+            print("Downloading file Failed.  Error: %s" % (e))
             return False
-        print "\nDownload Complete"
+        print("\nDownload Complete")
         return True
 
     def upload_file(self, bucket, filename, directory="/bootflash/"):
@@ -57,9 +61,9 @@ class cag():
         try:
             self.s3_client.upload_file(directory + filename, bucket, filename)
         except Exception as e:
-            print "Uploading file Failed.  Error: %s" % (e)
+            print("Uploading file Failed.  Error: %s" % (e))
             return False
-        print "Upload Complete to S3 bucket %s" % (bucket)
+        print("Upload Complete to S3 bucket %s" % (bucket))
         return True
 
     def save_cmd_output(self, cmdlist, filename, bucket=None, directory="/bootflash/", print_output=False):
@@ -67,10 +71,10 @@ class cag():
         with open(directory + filename, 'w') as f:
             for command in cmdlist:
                 cmd_output = cli.execute(command)
-                col_space = (80 - (len(command))) / 2
+                col_space = old_div((80 - (len(command))), 2)
                 if print_output is True:
-                    print "\n%s %s %s" % ('=' * col_space, command, '=' * col_space)
-                    print "%s \n%s" % (cmd_output, '=' * 80)
+                    print("\n%s %s %s" % ('=' * col_space, command, '=' * col_space))
+                    print("%s \n%s" % (cmd_output, '=' * 80))
 
                 f.write("\n%s %s %s\n" %
                         ('=' * col_space, command, '=' * col_space))
@@ -97,7 +101,7 @@ class cag():
                         ],
         )
         if response['ResponseMetadata']['HTTPStatusCode'] != 200:
-            print "Error sending %s" % name
+            print("Error sending %s" % name)
 
     def get_metadata(self):
         return get_instance_metadata(timeout=2, num_retries=1)

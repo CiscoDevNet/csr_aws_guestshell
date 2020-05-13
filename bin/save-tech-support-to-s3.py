@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+from builtins import *
 from csr_aws_guestshell import cag
 import argparse
 

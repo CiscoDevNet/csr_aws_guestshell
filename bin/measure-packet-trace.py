@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-
+from __future__ import print_function
+from builtins import *
+from builtins import range
+from past.utils import old_div
 import cli
 import sys
 import argparse
@@ -36,10 +39,10 @@ file = open('binaryfile', 'wb')
 output = ''
 packets_retrieved = 0
 start = 0
-num_of_loops = (args.pktcnt / 100) + 1
-time_delay = (int(args.seconds) / num_of_loops)
+num_of_loops = (old_div(args.pktcnt, 100)) + 1
+time_delay = (old_div(int(args.seconds), num_of_loops))
 end = time_delay
-print "executing CLI..."
+print("executing CLI...")
 
 while(args.pktcnt > 0):
     if(args.pktcnt <= 100):
@@ -90,9 +93,9 @@ while(args.pktcnt > 0):
         packets_retrieved += pkt_num
     args.pktcnt = args.pktcnt - 100
 
-print "\n"
-print "Retrieving CLI..."
-print "Retrieved %d packets" % packets_retrieved
+print("\n")
+print("Retrieving CLI...")
+print("Retrieved %d packets" % packets_retrieved)
 features = defaultdict(list)
 packets = {}
 times = []
@@ -102,7 +105,7 @@ start_time = stop_time = ""
 total_time = 0
 packet_num = 0
 
-print "Parsing data..."
+print("Parsing data...")
 
 for line in output.splitlines():
     if "Packet" in line:
@@ -139,32 +142,34 @@ for line in output.splitlines():
 if args.pktnum is not None:
     if args.pktnum in packet_line:
         for line in packet_line[args.pktnum]:
-            print line
+            print(line)
         sys.exit(1)
 
-print "Sorting data..."
+print("Sorting data...")
 
 time_sorted = sorted(times, key=lambda x: x[1])
 if len(time_sorted) > 0:
     max_time_packet = time_sorted[-1][0]
-    print "Min time is packet %s, value %d" % (time_sorted[0][0], time_sorted[0][1])
-    print "Max time is packet %s, value %d" % (max_time_packet, time_sorted[-1][1])
+    print("Min time is packet %s, value %d" % (time_sorted[0][0], time_sorted[0][1]))
+    print("Max time is packet %s, value %d" % (max_time_packet, time_sorted[-1][1]))
     average = float(sum(n for _, n in time_sorted)) / len(time_sorted)
 
 # print "Max Packet:"
 # for line in packets[max_time_packet]:
 #    print line
 
-print "Storing list..."
+print("Storing list...")
 data_list = []
-for feature, tuple_list in features.iteritems():
+for feature, tuple_list in list(features.items()):
     cnt = len(tuple_list)
     total = sum([t[1] for t in tuple_list])
-    pkt_num = t[0]
+    for t in tuple_list:
+        pkt_num = t[0]
+        break
     average = int(float(total) / cnt)
     minimum = min(tuple_list, key=lambda item: item[1])
     maximum = max(tuple_list, key=lambda item: item[1])
-    median = sorted([(lambda x: x[1])(x) for x in tuple_list])[int(cnt / 2)]
+    median = sorted([(lambda x: x[1])(x) for x in tuple_list])[int(old_div(cnt, 2))]
     data_list.append(
         (feature,
          cnt,
@@ -177,10 +182,10 @@ for feature, tuple_list in features.iteritems():
 
 data_sorted = sorted(data_list, key=lambda x: x[5], reverse=True)
 
-print "Printing list..."
+print("Printing list...")
 
-print "%-40s %10s %10s %10s %10s %10s %10s" % ("Feature", "Count", "Packet", "Min", "Max", "Avg", "Med")
-print "-" * 106
+print("%-40s %10s %10s %10s %10s %10s %10s" % ("Feature", "Count", "Packet", "Min", "Max", "Avg", "Med"))
+print("-" * 106)
 for entry in data_sorted:
     feature = entry[0]
     cnt = entry[1]
@@ -190,9 +195,9 @@ for entry in data_sorted:
     maximum = entry[4]
     median = entry[5]
     average = entry[6]
-    print "%-40s %10s %10d %10s %10s %10s %10s" % (feature, cnt, pkt_num, minimum, maximum, average, median)
+    print("%-40s %10s %10d %10s %10s %10s %10s" % (feature, cnt, pkt_num, minimum, maximum, average, median))
 
-with open('/bootflash/' + args.filename, 'wb') as csvfile:
+with open('/bootflash/' + args.filename, 'w') as csvfile:
     csvwriter = csv.writer(csvfile, delimiter=',',
                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
     csvwriter.writerow(["Feature Name",
@@ -214,11 +219,11 @@ with open('/bootflash/' + args.filename, 'wb') as csvfile:
             [feature, cnt, pkt_num, minimum, maximum, average, median])
 
     csvwriter.writerow(["Feature Name", "Packet Number", "Lapsed time"])
-    for feature, tuple_list in features.iteritems():
+    for feature, tuple_list in list(features.items()):
         for t in tuple_list:
             csvwriter.writerow([feature, t[0], t[1]])
 
-    for i, pkt in packets.iteritems():
+    for i, pkt in list(packets.items()):
         for line in pkt:
             csvwriter.writerow([line])
 
