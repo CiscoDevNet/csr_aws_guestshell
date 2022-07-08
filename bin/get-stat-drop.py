@@ -19,9 +19,11 @@ def print_cmd_output(command, output, print_output):
 
 def execute_command(command, print_output):
     cmd_output = cli.execute(command)
-    while len(cmd_output) == 0:
+    retries = 3
+    while len(cmd_output) == 0 and retries > 0:
         print("CMD FAILED, retrying")
         cmd_output = cli.execute(command)
+        retries -= 1
 
     print_cmd_output(command, cmd_output, print_output)
     return cmd_output
