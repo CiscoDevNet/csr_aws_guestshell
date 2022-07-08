@@ -22,6 +22,9 @@ def execute_command(command, print_output):
         cmd_output = cli.execute(command)
         retries -= 1
 
+    if retries == 0:
+        raise Exception("cli command did not return a valid response")
+
     if print_output:
         print_cmd_output(command, cmd_output)
     return cmd_output
